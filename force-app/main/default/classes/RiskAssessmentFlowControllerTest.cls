@@ -46,19 +46,31 @@ public with sharing class RiskAssessmentFlowControllerTest {
 
         BSC_Risk_Category__c category = new BSC_Risk_Category__c(
             Case_Record_Type__c = 'Base',
-            Final_Message_To_Display__c = 'Mantenha-se em isolamento relativo em casa, meça temperature 4 x ao dia e repita a auto-avaliação de 2 em 2 dias.',
+            Final_Message_To_Display__c = 'Preparation of Diagnostic Tests',
             Minimum_Score__c = 10,
-            Name = 'Paciente de Médio Risco',
+            Name = 'Preparation of Diagnostic Tests',
             Risk_Assessment_Definition__c = def.Id,
             Create_a_Case__c = true, 
             Case_Priority__c = 'Medium'
         );
         insert category;
 
+        BSC_Risk_Category__c categorycopy = new BSC_Risk_Category__c(
+            Case_Record_Type__c = 'Base',
+            Final_Message_To_Display__c = 'Medical Consultation',
+            Minimum_Score__c = 20,
+            Name = 'Medical Consultation',
+            Risk_Assessment_Definition__c = def.Id,
+            Create_a_Case__c = true, 
+            Case_Priority__c = 'Medium'
+        );
+        insert categorycopy;
+
     }
 
     @IsTest
     static void testGetRiskAssessmentQuestionaire(){
+        makeData();
         Test.startTest();
         List<RiskAssessmentFlowController.Section> secoes = RiskAssessmentFlowController.getRiskAssessmentQuestionaire('TestForm');
         System.assertEquals(secoes.size(), 1);
@@ -68,8 +80,9 @@ public with sharing class RiskAssessmentFlowControllerTest {
 
     @IsTest
     static void testGetRiskAssessmentCategory() {
-        Test.startTest();
+        makeData();
         RiskAssessmentFlowController.Category cat = RiskAssessmentFlowController.getRiskAssessmentCategory('TestForm', 10, null);
+        Test.startTest();
         System.assert(cat.createACase);
         cat = RiskAssessmentFlowController.getRiskAssessmentCategory('TestForm', 9, null);
         System.assertEquals(cat, null);
@@ -78,6 +91,7 @@ public with sharing class RiskAssessmentFlowControllerTest {
 
     @IsTest
     static void testCreateOrUpdateCase() {
+        makeData();
         Test.startTest();
         RiskAssessmentFlowController.Category cat = RiskAssessmentFlowController.getRiskAssessmentCategory('TestForm', 10, null);
         
@@ -87,12 +101,43 @@ public with sharing class RiskAssessmentFlowControllerTest {
         request.nomeContato = 'Teste';
         request.email = 'teste@teste.com';
         request.phone = '11-99111-9911';
+        request.GLB_Contact_Number_ID = 123456789;
         
         String idCaso = RiskAssessmentFlowController.createUpdateCase(request);
         System.assertNotEquals(idCaso, null);
         Case caso = [SELECT Id FROM Case WHERE Id = :idCaso];
         System.assert(caso != null);
         Test.stopTest();
+    }
+
+    @isTest
+    static void testUpdateCaseMedicalCare(){
+        makeData();
+        RiskAssessmentFlowController.Category cat = RiskAssessmentFlowController.getRiskAssessmentCategory('TestForm', 10, null);
+        Contact newcont = new Contact(Lastname = 'Test');
+        insert newcont;
+        Case newCase = new Case(RecordTypeId = '0125w000000AlKgAAK', ContactId = newcont.Id, GLB_Contact_Number_ID__c=123456789, Subject='Triage');
+        insert newCase;
+        Test.startTest();
+        RiskAssessmentFlowController.updateCase(cat.name, newCase.Id);
+        Test.stopTest();
+        Case caso = [SELECT Id, Status FROM Case WHERE Id =: newCase.Id];
+        System.assertEquals(cat.name, caso.Status);
+    }
+
+    @isTest
+    static void testUpdateCaseMedical(){
+        makeData();
+        RiskAssessmentFlowController.Category cat = RiskAssessmentFlowController.getRiskAssessmentCategory('TestForm', 20, null);
+        Contact newcont = new Contact(Lastname = 'Test');
+        insert newcont;
+        Case newCase = new Case(RecordTypeId = '0125w000000AlKgAAK', ContactId = newcont.Id, GLB_Contact_Number_ID__c=123456789, Subject='Triage');
+        insert newCase;
+        Test.startTest();
+        RiskAssessmentFlowController.updateCase(cat.name, newCase.Id);
+        Test.stopTest();
+        Case caso = [SELECT Id, Status FROM Case WHERE Id =: newCase.Id];
+        System.assertEquals(cat.name, caso.Status);
     }
 
 }

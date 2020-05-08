@@ -4,6 +4,11 @@
 public class RiskAssessmentFlowController {
 
     public static String HTML_ID_PREFIX = 'BS-COVID-19-';
+    public static String MEDICAL_QUEUE_NAME = 'Medical Team';
+    public static String MEDICAL_CARE_QUEUE_NAME = 'Medical care technical team';
+    public static List<String> QUEUE_NAMES = new List<String>{MEDICAL_QUEUE_NAME,MEDICAL_CARE_QUEUE_NAME};
+    public static List<String> MEDICAL_CAT = new List<String>{'Medical Consultation', 'Urgent Consultation'};
+    public static List<String> MEDICAL_CARE_CAT = new List<String>{'Preparation of Diagnostic Tests', 'Positive test follow-up', 'Negative test follow-up'};
 
     /*
     * Method responsible for executing the final component action - create or update the case
@@ -72,6 +77,7 @@ public class RiskAssessmentFlowController {
             caso.Priority = categoria.Case_Priority__c;
             caso.Description = request.respostas;
             caso.AccountId = acct.Id;
+            caso.GLB_Contact_Number_ID__c = request.GLB_Contact_Number_ID;
 
             if (categoria.Case_Record_Type__c != null 
                 && Schema.SObjectType.Case.getRecordTypeInfosByName().get(categoria.Case_Record_Type__c) != null) {
@@ -124,7 +130,11 @@ public class RiskAssessmentFlowController {
                     catR.caseRecordTypeId = Schema.SObjectType.Case.getRecordTypeInfosByName().get(cat.Case_Record_Type__c).getRecordTypeId();
                 }
                 catR.casePriority = cat.Case_Priority__c;
-                catR.createACase = cat.Create_a_Case__c;
+                if (idRegistro != null && 'Case'.equals(idRegistro.getSObjectType().getDescribe().getName())) {
+                    catR.createACase = false;
+                }else {
+                    catR.createACase = cat.Create_a_Case__c;
+                }
                 catR.textToDisplay = cat.Final_Message_To_Display__c;
                 if (acct != null) {
                     catR.nomeContato = acct.Name;
@@ -220,6 +230,34 @@ public class RiskAssessmentFlowController {
         return sectionList;
     }
 
+    /* 
+    * Method made to update the Status of the Case according to the Category Name
+    * The parameter catName will be bring the name of the Category and it will be assigned to the Case's Status
+    */
+    @AuraEnabled
+    public static void updateCase(String catName, Id idRegistro){
+        List<Case> ca = [SELECT Id, Status 
+                         FROM Case 
+                         WHERE Id =: idRegistro LIMIT 1];
+        List<Group> queue = [SELECT Id, Name
+                            FROM Group
+                            WHERE Name IN : QUEUE_NAMES];
+        for(Group g : queue){
+            if(MEDICAL_CARE_CAT.contains(catName)){
+                if(g.Name == MEDICAL_CARE_QUEUE_NAME){
+                    ca[0].OwnerId = g.Id;
+                }
+            }else if(MEDICAL_CAT.contains(catName)){
+                if(g.Name == MEDICAL_QUEUE_NAME){
+                    ca[0].OwnerId = g.Id;
+                }
+            }
+        }
+        ca[0].Status = catName;
+        Case c = ca[0];
+        update c;
+    }
+
     public class Option {
         @AuraEnabled public String label;
         @AuraEnabled public String value;
@@ -265,6 +303,7 @@ public class RiskAssessmentFlowController {
         @AuraEnabled public String nomeContato; 
         @AuraEnabled public String email;
         @AuraEnabled public String phone;
+        @AuraEnabled public Decimal GLB_Contact_Number_ID;
     }
     
     public class CreateCaseRequest {
@@ -274,5 +313,6 @@ public class RiskAssessmentFlowController {
         @AuraEnabled public String nomeContato {get; set;}
         @AuraEnabled public String email {get; set;}
         @AuraEnabled public String phone {get; set;}
+        @AuraEnabled public Decimal GLB_Contact_Number_ID {get; set;}
     }
 }

@@ -1,9 +1,11 @@
 import { LightningElement, wire, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
+import { updateRecord } from 'lightning/uiRecordApi';
 import createUpdateCase from '@salesforce/apex/RiskAssessmentFlowController.createUpdateCase';
 import getRiskAssessmentQuestionaire from '@salesforce/apex/RiskAssessmentFlowController.getRiskAssessmentQuestionaire';
 import getRiskAssessmentCategory from '@salesforce/apex/RiskAssessmentFlowController.getRiskAssessmentCategory';
+import updateCase from '@salesforce/apex/RiskAssessmentFlowController.updateCase';
 
 export default class RiskAssessmentFlow extends NavigationMixin(LightningElement) {
     @wire(getRiskAssessmentQuestionaire, {defName: '$riskAssessmentDefinitionName'}) sections;    
@@ -16,6 +18,7 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
     @track nomeContato = '';
     @track telefoneContato = '';
     @track emailContato = '';
+    @track GLB_Contact_Number_ID = null;
 
     mostrarCalcularCategoriaRisco = false;
     respostas = new Map();
@@ -89,6 +92,14 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
             this.template.querySelector('.spinner-show').className = 'spinner-hide';
         }
         return "";
+    }
+
+    get updateCase(){
+        updateCase({catName: this.riskCategory.data.name, idRegistro: this.recordId});
+    }
+
+    get refreshPage(){
+        updateRecord({ fields: { Id: this.recordId } });
     }
 
     handleChange(evt) {
@@ -192,7 +203,7 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
                 className = className.substring(0, className.indexOf('slds-is-collapsed')) + 'slds-is-expanded';
                 this.template.querySelector('.BSC_page2').className = className;
             }
-
+        
             var windowTop = parseInt(this.template.querySelector('.BSC_page2').offsetTop) - 80;
 
             var scrollOptions = {
@@ -212,6 +223,9 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
             this.telefoneContato = evt.target.value;
         } else if (field === 'emailContato') {
             this.emailContato = evt.target.value;
+        }
+        else if (field === 'GLB_Contact_Number_ID') {
+            this.GLB_Contact_Number_ID = evt.target.value;
         }
     }
 
@@ -250,6 +264,9 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
             if (this.emailContato === '') {
                 this.emailContato = this.riskCategory.data.email;
             }
+            if (this.GLB_Contact_Number_ID === null) {
+                this.GLB_Contact_Number_ID = this.riskCategory.data.GLB_Contact_Number_ID;
+            }
 
             let createUpdateCaseRequest = {
                 riskCategoryId: this.riskCategory.data.categoryId,
@@ -257,7 +274,8 @@ export default class RiskAssessmentFlow extends NavigationMixin(LightningElement
                 idRegistro: this.recordId,
                 nomeContato: this.nomeContato,
                 email: this.emailContato,
-                phone: this.telefoneContato
+                phone: this.telefoneContato,
+                GLB_Contact_Number_ID: this.GLB_Contact_Number_ID
             };
 
             createUpdateCase({request: createUpdateCaseRequest})

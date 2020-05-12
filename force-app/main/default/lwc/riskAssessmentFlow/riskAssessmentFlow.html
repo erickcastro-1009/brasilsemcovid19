@@ -90,6 +90,7 @@
                         <p class="slds-text-title_caps">{riskCategory.data.textToDisplay}</p>
                     </div>
                     <br />
+                    {updateCase}
                     <template if:true={riskCategory.data.createACase}>
                         <p class="slds-text-color_error">Você deve abrir um chamado com nossa equipe. Por favor preencha e/ou confira o formulário abaixo.</p>
                         <br />
@@ -119,6 +120,14 @@
                             onchange={handleContactFieldsChanges}
                             required>
                         </lightning-input>
+                        <lightning-input 
+                            name="GLB_Contact_Number_ID"
+                            type="number" 
+                            label="Supplied Contact Number ID" 
+                            value={riskCategory.data.GLB_Contact_Number_ID}
+                            onchange={handleContactFieldsChanges}
+                            required>
+                        </lightning-input>
                         <br /> 
                         <lightning-button 
                             variant="brand" 
@@ -130,6 +139,7 @@
                     <template if:false={riskCategory.data.createACase}>
                         <p class="slds-text-color_success">Não é necessário no momento abrir um chamado com nossa equipe.</p>
                     </template>
+                    {refreshPage}
                 </template>
             </div>
         </div>

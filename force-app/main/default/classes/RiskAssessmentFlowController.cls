@@ -180,7 +180,7 @@ public class RiskAssessmentFlowController {
 
             List<BSC_Question__c> questionsc = 
                 [SELECT Id, Question_Text__c, Question_Type__c, Weight__c, Is_Required__c, Is_Last_Question__c,
-                    (Select Id, Option_Value__c, Option_Score__c FROM Question_Options__r ORDER BY Option_Score__c) 
+                    (Select Id, Option_Value__c, Option_Score__c FROM Question_Options__r ORDER BY Option_Score__c DESC) 
                 FROM BSC_Question__c 
                 WHERE Risk_Assessment_Section__c = :sectionc.Id
                 ORDER BY Sequence__c];
